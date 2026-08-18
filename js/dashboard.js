@@ -2,19 +2,27 @@
  * Dashboard Handler + modern UI layer
  */
 
-function bootModernUI() {
-    if (!document.querySelector('link[data-modern-ui]')) {
-        const link = document.createElement('link');
-        link.rel = 'stylesheet';
-        link.href = 'css/modern.css?v=2';
-        link.dataset.modernUi = '1';
-        document.head.appendChild(link);
-    }
+function loadModernStyles() {
+    ['css/modern.css?v=2', 'css/review.css?v=1'].forEach((href, index) => {
+        if (!document.querySelector(`link[data-cm-style="${index}"]`)) {
+            const link = document.createElement('link');
+            link.rel = 'stylesheet';
+            link.href = href;
+            link.dataset.cmStyle = String(index);
+            document.head.appendChild(link);
+        }
+    });
+}
 
+function bootModernUI() {
+    loadModernStyles();
     document.documentElement.dataset.cmReady = '1';
     setupDateReviewFilters();
     updateSystemClock();
-    setInterval(updateSystemClock, 1000);
+    if (!window.__cmClockStarted) {
+        window.__cmClockStarted = true;
+        setInterval(updateSystemClock, 1000);
+    }
 }
 
 function updateSystemClock() {
@@ -35,7 +43,9 @@ function setupDateReviewFilters() {
         const wrap = document.createElement('label');
         wrap.className = 'cm-date-filter';
         wrap.innerHTML = `<span>${label}</span><input type="date" id="${id}">`;
-        wrap.querySelector('input').addEventListener('change', applyReviewDateFilter);
+        wrap.querySelector('input').addEventListener('change', () => {
+            if (typeof applyDataFilters === 'function') applyDataFilters();
+        });
         return wrap;
     };
 
@@ -56,10 +66,6 @@ function setupDateReviewFilters() {
     toolbar.appendChild(clear);
 }
 
-function applyReviewDateFilter() {
-    if (typeof applyDataFilters === 'function') applyDataFilters();
-}
-
 async function loadDashboard() {
     bootModernUI();
     try {
@@ -75,7 +81,6 @@ async function loadDashboard() {
     } catch (e) {
         console.error('Load dashboard error:', e);
     }
-
     loadLiveActivities();
     loadOnlineUsersList();
 }
@@ -94,12 +99,8 @@ async function loadLiveActivities() {
                     <span class="activity-detail">${escapeHTML(item.detail || '')}</span>
                 </div>
             `).join('');
-        } else {
-            container.innerHTML = '<div class="loading-text">Belum ada aktivitas</div>';
-        }
-    } catch (e) {
-        container.innerHTML = '<div class="loading-text">Gagal memuat aktivitas</div>';
-    }
+        } else container.innerHTML = '<div class="loading-text">Belum ada aktivitas</div>';
+    } catch (e) { container.innerHTML = '<div class="loading-text">Gagal memuat aktivitas</div>'; }
 }
 
 async function loadOnlineUsersList() {
@@ -109,7 +110,7 @@ async function loadOnlineUsersList() {
         const response = await apiRequest('getOnlineUsers', {});
         if (response.success && response.data) {
             const users = response.data;
-            if (users.length === 0) {
+            if (!users.length) {
                 container.innerHTML = '<div class="loading-text">Tidak ada user online</div>';
                 return;
             }
@@ -124,29 +125,17 @@ async function loadOnlineUsersList() {
                 </div>
             `).join('');
         }
-    } catch (e) {
-        container.innerHTML = '<div class="loading-text">Gagal memuat user online</div>';
-    }
+    } catch (e) { container.innerHTML = '<div class="loading-text">Gagal memuat user online</div>'; }
 }
 
 function escapeHTML(value) {
-    return String(value ?? '').replace(/[&<>"']/g, char => ({
-        '&':'&amp;', '<':'&lt;', '>':'&gt;', '"':'&quot;', "'":'&#039;'
-    }[char]));
+    return String(value ?? '').replace(/[&<>"']/g, char => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#039;'}[char]));
 }
 
 function formatTime(timestamp) {
     if (!timestamp) return '-';
-    try {
-        const date = new Date(timestamp);
-        return date.toLocaleTimeString('id-ID', { hour12: false });
-    } catch (e) {
-        return timestamp;
-    }
+    try { return new Date(timestamp).toLocaleTimeString('id-ID', { hour12: false }); }
+    catch (e) { return timestamp; }
 }
 
-if (document.readyState === 'loading') {
-    document.addEventListener('DOMContentLoaded', bootModernUI);
-} else {
-    bootModernUI();
-}
+if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', bootModernUI); else bootModernUI();
