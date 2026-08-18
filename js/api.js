@@ -9,6 +9,22 @@ async function apiRequest(action, data = {}) {
     const url = CONFIG.API_URL;
     const token = localStorage.getItem(STORAGE_KEYS.TOKEN);
 
+    // Refresh-safe session: the browser already has the last verified user.
+    // Do not block F5 on a cold Google Apps Script request.
+    if (action === 'getCurrentUser' && token) {
+        const cachedUser = localStorage.getItem(STORAGE_KEYS.USER);
+        if (cachedUser) {
+            try {
+                const user = JSON.parse(cachedUser);
+                if (user && typeof user === 'object') {
+                    return { success: true, data: user, cached: true };
+                }
+            } catch (e) {
+                localStorage.removeItem(STORAGE_KEYS.USER);
+            }
+        }
+    }
+
     const payload = {
         action,
         data,
@@ -25,8 +41,6 @@ async function apiRequest(action, data = {}) {
 
         const response = await fetch(url, {
             method: 'POST',
-            // text/plain adalah CORS-safelisted dan menghindari preflight OPTIONS.
-            // Apps Script tetap menerima JSON melalui e.postData.contents.
             headers: {
                 'Content-Type': 'text/plain;charset=UTF-8',
                 'Accept': 'application/json'
@@ -82,7 +96,6 @@ async function apiRequest(action, data = {}) {
     }
 }
 
-// Helper untuk request dengan cache
 let requestCache = {};
 let lastRequestTime = {};
 
