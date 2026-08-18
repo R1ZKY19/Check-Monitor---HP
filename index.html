@@ -1,0 +1,638 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Check Monitor - Dashboard Pengecekan HP</title>
+    <link rel="stylesheet" href="css/style.css">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+</head>
+<body>
+    <!-- Login Page -->
+    <div id="loginPage" class="login-page">
+        <div class="login-container">
+            <div class="login-card glass">
+                <div class="login-header">
+                    <div class="logo-container">
+                        <i class="fas fa-mobile-alt logo-icon"></i>
+                        <h1>Check Monitor</h1>
+                    </div>
+                    <p>Sistem Monitoring Pengecekan HP</p>
+                </div>
+                <form id="loginForm" class="login-form">
+                    <div class="form-group">
+                        <label><i class="fas fa-user"></i> Username</label>
+                        <input type="text" id="username" placeholder="Masukkan username" required autocomplete="username">
+                    </div>
+                    <div class="form-group">
+                        <label><i class="fas fa-lock"></i> Password</label>
+                        <div class="password-wrapper">
+                            <input type="password" id="password" placeholder="Masukkan password" required autocomplete="current-password">
+                            <button type="button" class="toggle-password" onclick="togglePassword()">
+                                <i class="fas fa-eye"></i>
+                            </button>
+                        </div>
+                    </div>
+                    <button type="submit" class="btn-login">
+                        <i class="fas fa-sign-in-alt"></i> Login
+                    </button>
+                    <div id="loginError" class="login-error hidden"></div>
+                </form>
+                <div class="login-footer">
+                    <span>v1.0.0</span>
+                </div>
+            </div>
+        </div>
+        <div class="login-bg">
+            <div class="bg-circle circle1"></div>
+            <div class="bg-circle circle2"></div>
+            <div class="bg-circle circle3"></div>
+        </div>
+    </div>
+
+    <!-- Dashboard -->
+    <div id="dashboardPage" class="dashboard-page hidden">
+        <!-- Sidebar -->
+        <nav class="sidebar" id="sidebar">
+            <div class="sidebar-brand">
+                <i class="fas fa-mobile-alt"></i>
+                <span>Check Monitor</span>
+            </div>
+            <ul class="sidebar-menu">
+                <li class="menu-item active" data-page="dashboard">
+                    <i class="fas fa-th-large"></i>
+                    <span>Dashboard</span>
+                </li>
+                <li class="menu-item" data-page="datahp">
+                    <i class="fas fa-list"></i>
+                    <span>Data HP</span>
+                </li>
+                <li class="menu-item" data-page="monitor">
+                    <i class="fas fa-users"></i>
+                    <span>Live Monitor</span>
+                </li>
+                <li class="menu-item" data-page="activity">
+                    <i class="fas fa-history"></i>
+                    <span>Activity Log</span>
+                </li>
+                <li class="menu-item" data-page="users">
+                    <i class="fas fa-user-cog"></i>
+                    <span>Users</span>
+                </li>
+                <li class="menu-item" data-page="settings">
+                    <i class="fas fa-cog"></i>
+                    <span>Settings</span>
+                </li>
+            </ul>
+            <div class="sidebar-footer">
+                <div class="user-info">
+                    <div class="user-avatar" id="userAvatar">A</div>
+                    <div class="user-details">
+                        <span id="userName">User</span>
+                        <small id="userRole">Role</small>
+                    </div>
+                </div>
+                <button class="btn-logout" onclick="logout()">
+                    <i class="fas fa-sign-out-alt"></i>
+                    <span>Logout</span>
+                </button>
+            </div>
+        </nav>
+
+        <!-- Main Content -->
+        <main class="main-content">
+            <!-- Header -->
+            <header class="main-header">
+                <button class="menu-toggle" onclick="toggleSidebar()">
+                    <i class="fas fa-bars"></i>
+                </button>
+                <h2 id="pageTitle">Dashboard</h2>
+                <div class="header-right">
+                    <span class="online-status" id="onlineStatus">
+                        <i class="fas fa-circle"></i> Online
+                    </span>
+                    <span class="header-time" id="headerTime"></span>
+                </div>
+            </header>
+
+            <!-- Page: Dashboard -->
+            <section id="page-dashboard" class="page-content active">
+                <!-- Stats Cards -->
+                <div class="stats-grid">
+                    <div class="stat-card glass">
+                        <div class="stat-icon online-icon"><i class="fas fa-circle"></i></div>
+                        <div class="stat-info">
+                            <span class="stat-label">Online</span>
+                            <span class="stat-value" id="statOnline">0</span>
+                        </div>
+                    </div>
+                    <div class="stat-card glass">
+                        <div class="stat-icon checking-icon"><i class="fas fa-spinner"></i></div>
+                        <div class="stat-info">
+                            <span class="stat-label">Sedang Cek</span>
+                            <span class="stat-value" id="statChecking">0</span>
+                        </div>
+                    </div>
+                    <div class="stat-card glass">
+                        <div class="stat-icon completed-icon"><i class="fas fa-check-circle"></i></div>
+                        <div class="stat-info">
+                            <span class="stat-label">Sudah Dicek</span>
+                            <span class="stat-value" id="statCompleted">0</span>
+                        </div>
+                    </div>
+                    <div class="stat-card glass">
+                        <div class="stat-icon pending-icon"><i class="fas fa-clock"></i></div>
+                        <div class="stat-info">
+                            <span class="stat-label">Belum Dicek</span>
+                            <span class="stat-value" id="statPending">0</span>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Live Activity -->
+                <div class="dashboard-grid">
+                    <div class="card glass live-activity">
+                        <div class="card-header">
+                            <h3><i class="fas fa-bolt"></i> Live Activity</h3>
+                            <span class="badge live-badge">LIVE</span>
+                        </div>
+                        <div class="card-body" id="liveActivities">
+                            <div class="activity-loading">Memuat aktivitas...</div>
+                        </div>
+                    </div>
+                    <div class="card glass online-users">
+                        <div class="card-header">
+                            <h3><i class="fas fa-users"></i> Online Users</h3>
+                            <span class="badge" id="onlineCount">0</span>
+                        </div>
+                        <div class="card-body" id="onlineUsersList">
+                            <div class="loading-text">Memuat user online...</div>
+                        </div>
+                    </div>
+                </div>
+            </section>
+
+            <!-- Page: Data HP -->
+            <section id="page-datahp" class="page-content">
+                <div class="page-toolbar">
+                    <div class="search-filters">
+                        <div class="search-box">
+                            <i class="fas fa-search"></i>
+                            <input type="text" id="searchData" placeholder="Cari nama atau nomor HP..." onkeyup="filterData()">
+                        </div>
+                        <select id="filterStatus" onchange="filterData()">
+                            <option value="">Semua Status</option>
+                            <option value="BELUM_DICEK">Belum Dicek</option>
+                            <option value="SEDANG_DICEK">Sedang Dicek</option>
+                            <option value="SUDAH_DICEK">Sudah Dicek</option>
+                        </select>
+                        <select id="filterPetugas" onchange="filterData()">
+                            <option value="">Semua Petugas</option>
+                        </select>
+                    </div>
+                    <button class="btn-refresh" onclick="loadDataHP()">
+                        <i class="fas fa-sync-alt"></i> Refresh
+                    </button>
+                </div>
+                <div class="card glass table-card">
+                    <div class="card-body table-wrapper">
+                        <div id="dataTableContainer">
+                            <table class="data-table" id="dataTable">
+                                <thead>
+                                    <tr>
+                                        <th>NO</th>
+                                        <th>NAMA</th>
+                                        <th>NO HP</th>
+                                        <th>STATUS</th>
+                                        <th>PETUGAS</th>
+                                        <th>WAKTU MULAI</th>
+                                        <th>WAKTU SELESAI</th>
+                                        <th>AKSI</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="dataTableBody">
+                                    <tr><td colspan="8" class="loading-text">Memuat data...</td></tr>
+                                </tbody>
+                            </table>
+                        </div>
+                        <div class="table-pagination" id="tablePagination">
+                            <button onclick="prevPage()" id="prevBtn"><i class="fas fa-chevron-left"></i></button>
+                            <span id="pageInfo">Halaman 1</span>
+                            <button onclick="nextPage()" id="nextBtn"><i class="fas fa-chevron-right"></i></button>
+                        </div>
+                    </div>
+                </div>
+            </section>
+
+            <!-- Page: Live Monitor -->
+            <section id="page-monitor" class="page-content">
+                <div class="card glass">
+                    <div class="card-header">
+                        <h3><i class="fas fa-eye"></i> Live User Monitor</h3>
+                        <span class="badge live-badge">REALTIME</span>
+                    </div>
+                    <div class="card-body">
+                        <div id="monitorUsersList">
+                            <div class="loading-text">Memuat data monitor...</div>
+                        </div>
+                    </div>
+                </div>
+            </section>
+
+            <!-- Page: Activity Log -->
+            <section id="page-activity" class="page-content">
+                <div class="page-toolbar">
+                    <div class="search-filters">
+                        <div class="search-box">
+                            <i class="fas fa-search"></i>
+                            <input type="text" id="searchActivity" placeholder="Cari aktivitas..." onkeyup="filterActivity()">
+                        </div>
+                    </div>
+                    <button class="btn-refresh" onclick="loadActivityLog()">
+                        <i class="fas fa-sync-alt"></i> Refresh
+                    </button>
+                </div>
+                <div class="card glass">
+                    <div class="card-body">
+                        <div id="activityLogContainer">
+                            <table class="data-table">
+                                <thead>
+                                    <tr>
+                                        <th>WAKTU</th>
+                                        <th>USER</th>
+                                        <th>AKTIVITAS</th>
+                                        <th>DETAIL</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="activityLogBody">
+                                    <tr><td colspan="4" class="loading-text">Memuat activity log...</td></tr>
+                                </tbody>
+                            </table>
+                        </div>
+                        <div class="table-pagination" id="activityPagination">
+                            <button onclick="prevActivityPage()" id="prevActivityBtn"><i class="fas fa-chevron-left"></i></button>
+                            <span id="activityPageInfo">Halaman 1</span>
+                            <button onclick="nextActivityPage()" id="nextActivityBtn"><i class="fas fa-chevron-right"></i></button>
+                        </div>
+                    </div>
+                </div>
+            </section>
+
+            <!-- Page: Users -->
+            <section id="page-users" class="page-content">
+                <div class="page-toolbar">
+                    <button class="btn-primary" onclick="showAddUserModal()">
+                        <i class="fas fa-user-plus"></i> Tambah User
+                    </button>
+                </div>
+                <div class="card glass">
+                    <div class="card-body">
+                        <div id="usersContainer">
+                            <table class="data-table">
+                                <thead>
+                                    <tr>
+                                        <th>USER ID</th>
+                                        <th>NAMA</th>
+                                        <th>USERNAME</th>
+                                        <th>ROLE</th>
+                                        <th>STATUS</th>
+                                        <th>LAST LOGIN</th>
+                                        <th>AKSI</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="usersTableBody">
+                                    <tr><td colspan="7" class="loading-text">Memuat data user...</td></tr>
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+            </section>
+
+            <!-- Page: Settings -->
+            <section id="page-settings" class="page-content">
+                <div class="card glass">
+                    <div class="card-header">
+                        <h3><i class="fas fa-cog"></i> Pengaturan</h3>
+                    </div>
+                    <div class="card-body">
+                        <div class="settings-group">
+                            <h4>Informasi Sistem</h4>
+                            <div class="settings-item">
+                                <span class="settings-label">Versi</span>
+                                <span class="settings-value">v1.0.0</span>
+                            </div>
+                            <div class="settings-item">
+                                <span class="settings-label">Status</span>
+                                <span class="settings-value"><span class="badge live-badge">Berjalan</span></span>
+                            </div>
+                            <div class="settings-item">
+                                <span class="settings-label">API Endpoint</span>
+                                <span class="settings-value" id="apiEndpoint">-</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </section>
+        </main>
+    </div>
+
+    <!-- Modal Detail -->
+    <div id="detailModal" class="modal hidden">
+        <div class="modal-content glass">
+            <div class="modal-header">
+                <h3><i class="fas fa-info-circle"></i> Detail Pengecekan</h3>
+                <button class="modal-close" onclick="closeDetailModal()">&times;</button>
+            </div>
+            <div class="modal-body" id="detailModalBody">
+                <div class="detail-loading">Memuat detail...</div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Modal Add/Edit User -->
+    <div id="userModal" class="modal hidden">
+        <div class="modal-content glass">
+            <div class="modal-header">
+                <h3 id="userModalTitle"><i class="fas fa-user-plus"></i> Tambah User</h3>
+                <button class="modal-close" onclick="closeUserModal()">&times;</button>
+            </div>
+            <div class="modal-body">
+                <form id="userForm">
+                    <input type="hidden" id="editUserId">
+                    <div class="form-group">
+                        <label>Nama Lengkap</label>
+                        <input type="text" id="userFormName" placeholder="Masukkan nama lengkap" required>
+                    </div>
+                    <div class="form-group">
+                        <label>Username</label>
+                        <input type="text" id="userFormUsername" placeholder="Masukkan username" required>
+                    </div>
+                    <div class="form-group">
+                        <label>Password</label>
+                        <input type="password" id="userFormPassword" placeholder="Masukkan password (kosongkan jika tidak diubah)">
+                    </div>
+                    <div class="form-group">
+                        <label>Role</label>
+                        <select id="userFormRole">
+                            <option value="PETUGAS">PETUGAS</option>
+                            <option value="ADMIN">ADMIN</option>
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <label>Status</label>
+                        <select id="userFormStatus">
+                            <option value="AKTIF">AKTIF</option>
+                            <option value="NONAKTIF">NONAKTIF</option>
+                        </select>
+                    </div>
+                    <button type="submit" class="btn-primary" style="width:100%;">
+                        <i class="fas fa-save"></i> Simpan
+                    </button>
+                </form>
+            </div>
+        </div>
+    </div>
+
+    <!-- Toast Container -->
+    <div id="toastContainer"></div>
+
+    <script src="js/config.js"></script>
+    <script src="js/api.js"></script>
+    <script src="js/auth.js"></script>
+    <script src="js/dashboard.js"></script>
+    <script src="js/monitor.js"></script>
+    <script>
+        // Global initialization
+        document.addEventListener('DOMContentLoaded', function() {
+            initApp();
+        });
+
+        function initApp() {
+            const token = localStorage.getItem('authToken');
+            if (token) {
+                // Check token validity
+                apiRequest('getCurrentUser', {})
+                    .then(response => {
+                        if (response.success) {
+                            showDashboard();
+                            startDashboard();
+                        } else {
+                            localStorage.removeItem('authToken');
+                            showLogin();
+                        }
+                    })
+                    .catch(() => {
+                        localStorage.removeItem('authToken');
+                        showLogin();
+                    });
+            } else {
+                showLogin();
+            }
+
+            // Set time
+            updateClock();
+            setInterval(updateClock, 1000);
+        }
+
+        function updateClock() {
+            const now = new Date();
+            const timeStr = now.toLocaleTimeString('id-ID', { hour12: false });
+            document.getElementById('headerTime').textContent = timeStr;
+        }
+
+        function showLogin() {
+            document.getElementById('loginPage').classList.remove('hidden');
+            document.getElementById('dashboardPage').classList.add('hidden');
+        }
+
+        function showDashboard() {
+            document.getElementById('loginPage').classList.add('hidden');
+            document.getElementById('dashboardPage').classList.remove('hidden');
+        }
+
+        function togglePassword() {
+            const pw = document.getElementById('password');
+            const icon = document.querySelector('.toggle-password i');
+            if (pw.type === 'password') {
+                pw.type = 'text';
+                icon.className = 'fas fa-eye-slash';
+            } else {
+                pw.type = 'password';
+                icon.className = 'fas fa-eye';
+            }
+        }
+
+        function toggleSidebar() {
+            document.getElementById('sidebar').classList.toggle('mobile-open');
+        }
+
+        // Login form handler
+        document.getElementById('loginForm').addEventListener('submit', function(e) {
+            e.preventDefault();
+            const username = document.getElementById('username').value.trim();
+            const password = document.getElementById('password').value;
+
+            if (!username || !password) {
+                showLoginError('Harap isi username dan password');
+                return;
+            }
+
+            const loginBtn = this.querySelector('.btn-login');
+            loginBtn.disabled = true;
+            loginBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Login...';
+
+            apiRequest('login', { username, password })
+                .then(response => {
+                    if (response.success) {
+                        localStorage.setItem('authToken', response.data.token);
+                        localStorage.setItem('userData', JSON.stringify(response.data.user));
+                        showDashboard();
+                        startDashboard();
+                        showToast('Berhasil login!', 'success');
+                        document.getElementById('loginError').classList.add('hidden');
+                    } else {
+                        showLoginError(response.message || 'Login gagal');
+                    }
+                })
+                .catch(error => {
+                    showLoginError('Terjadi kesalahan, coba lagi');
+                })
+                .finally(() => {
+                    loginBtn.disabled = false;
+                    loginBtn.innerHTML = '<i class="fas fa-sign-in-alt"></i> Login';
+                });
+        });
+
+        function showLoginError(msg) {
+            const el = document.getElementById('loginError');
+            el.textContent = msg;
+            el.classList.remove('hidden');
+        }
+
+        // Sidebar navigation
+        document.querySelectorAll('.menu-item').forEach(item => {
+            item.addEventListener('click', function() {
+                const page = this.dataset.page;
+                navigateTo(page);
+            });
+        });
+
+        function navigateTo(page) {
+            // Update menu
+            document.querySelectorAll('.menu-item').forEach(m => m.classList.remove('active'));
+            document.querySelector(`.menu-item[data-page="${page}"]`)?.classList.add('active');
+
+            // Update pages
+            document.querySelectorAll('.page-content').forEach(p => p.classList.remove('active'));
+            const targetPage = document.getElementById(`page-${page}`);
+            if (targetPage) targetPage.classList.add('active');
+
+            // Update title
+            const titles = {
+                dashboard: 'Dashboard',
+                datahp: 'Data HP',
+                monitor: 'Live Monitor',
+                activity: 'Activity Log',
+                users: 'Users',
+                settings: 'Settings'
+            };
+            document.getElementById('pageTitle').textContent = titles[page] || page;
+
+            // Load data
+            switch(page) {
+                case 'dashboard': loadDashboard(); break;
+                case 'datahp': loadDataHP(); break;
+                case 'monitor': loadMonitorUsers(); break;
+                case 'activity': loadActivityLog(); break;
+                case 'users': loadUsers(); break;
+            }
+
+            // Close mobile sidebar
+            document.getElementById('sidebar').classList.remove('mobile-open');
+        }
+
+        // Toast system
+        function showToast(message, type = 'info') {
+            const container = document.getElementById('toastContainer');
+            const toast = document.createElement('div');
+            toast.className = `toast toast-${type}`;
+            const icons = {
+                success: 'fa-check-circle',
+                error: 'fa-exclamation-circle',
+                warning: 'fa-exclamation-triangle',
+                info: 'fa-info-circle'
+            };
+            toast.innerHTML = `
+                <i class="fas ${icons[type] || icons.info}"></i>
+                <span>${message}</span>
+                <button onclick="this.parentElement.remove()">&times;</button>
+            `;
+            container.appendChild(toast);
+            setTimeout(() => {
+                toast.style.opacity = '0';
+                toast.style.transform = 'translateX(100px)';
+                setTimeout(() => toast.remove(), 300);
+            }, 5000);
+        }
+
+        // Close modals on overlay click
+        document.querySelectorAll('.modal').forEach(modal => {
+            modal.addEventListener('click', function(e) {
+                if (e.target === this) {
+                    this.classList.add('hidden');
+                }
+            });
+        });
+
+        // Close modals with Escape key
+        document.addEventListener('keydown', function(e) {
+            if (e.key === 'Escape') {
+                document.querySelectorAll('.modal:not(.hidden)').forEach(m => m.classList.add('hidden'));
+            }
+        });
+
+        // User form handler
+        document.getElementById('userForm').addEventListener('submit', function(e) {
+            e.preventDefault();
+            const userId = document.getElementById('editUserId').value;
+            const data = {
+                nama: document.getElementById('userFormName').value.trim(),
+                username: document.getElementById('userFormUsername').value.trim(),
+                password: document.getElementById('userFormPassword').value,
+                role: document.getElementById('userFormRole').value,
+                status: document.getElementById('userFormStatus').value
+            };
+
+            if (!data.nama || !data.username) {
+                showToast('Harap isi nama dan username', 'warning');
+                return;
+            }
+
+            const btn = this.querySelector('button[type="submit"]');
+            btn.disabled = true;
+            btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Menyimpan...';
+
+            const action = userId ? 'updateUser' : 'createUser';
+            if (userId) data.userId = userId;
+
+            apiRequest(action, data)
+                .then(response => {
+                    if (response.success) {
+                        showToast(response.message || 'User berhasil disimpan', 'success');
+                        closeUserModal();
+                        loadUsers();
+                    } else {
+                        showToast(response.message || 'Gagal menyimpan user', 'error');
+                    }
+                })
+                .catch(() => showToast('Terjadi kesalahan', 'error'))
+                .finally(() => {
+                    btn.disabled = false;
+                    btn.innerHTML = '<i class="fas fa-save"></i> Simpan';
+                });
+        });
+    </script>
+</body>
+</html>
