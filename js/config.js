@@ -4,14 +4,14 @@
  */
 
 const CONFIG = {
-    // Ganti dengan URL Web App Anda setelah deploy
-    API_URL: 'https://script.google.com/macros/s/AKfycbz7RsJM_Z7MVffs_AhXY8-ckKwpSb3TUOaCVHHEg8-r1p-hoThnuSJpK1bO_cKr3M3T/exec',
+    // URL Web App Google Apps Script terbaru
+    API_URL: 'https://script.google.com/macros/s/AKfycbxEFazNpp9qEvE3sKEnWlZkvR1-vBcHqYEHq-rfWsr6d1oxbjY-bbiPrkSyh3ciN9Mt/exec',
     
     // Interval polling dalam milidetik
-    POLLING_INTERVAL: 5000, // 5 detik
+    POLLING_INTERVAL: 5000,
     
     // Interval heartbeat
-    HEARTBEAT_INTERVAL: 10000, // 10 detik
+    HEARTBEAT_INTERVAL: 10000,
     
     // Timeout offline (detik)
     OFFLINE_TIMEOUT: 30,
