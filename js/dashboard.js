@@ -1,9 +1,10 @@
 /**
- * Dashboard Handler + modern UI layer
+ * Dashboard Handler
+ * Keep the existing dashboard behavior, but bind to the actual HTML IDs.
  */
 
 function loadModernStyles() {
-    ['css/modern.css?v=2', 'css/review.css?v=1'].forEach((href, index) => {
+    ['css/modern.css?v=3', 'css/review.css?v=2'].forEach((href, index) => {
         if (!document.querySelector(`link[data-cm-style="${index}"]`)) {
             const link = document.createElement('link');
             link.rel = 'stylesheet';
@@ -17,12 +18,7 @@ function loadModernStyles() {
 function bootModernUI() {
     loadModernStyles();
     document.documentElement.dataset.cmReady = '1';
-    setupDateReviewFilters();
     updateSystemClock();
-    if (!window.__cmClockStarted) {
-        window.__cmClockStarted = true;
-        setInterval(updateSystemClock, 1000);
-    }
 }
 
 function updateSystemClock() {
@@ -34,108 +30,91 @@ function updateSystemClock() {
     });
 }
 
-function setupDateReviewFilters() {
-    const toolbar = document.querySelector('#page-datahp .search-filters');
-    if (!toolbar || toolbar.dataset.reviewReady) return;
-    toolbar.dataset.reviewReady = '1';
-
-    const makeDate = (id, label) => {
-        const wrap = document.createElement('label');
-        wrap.className = 'cm-date-filter';
-        wrap.innerHTML = `<span>${label}</span><input type="date" id="${id}">`;
-        wrap.querySelector('input').addEventListener('change', () => {
-            if (typeof applyDataFilters === 'function') applyDataFilters();
-        });
-        return wrap;
-    };
-
-    toolbar.appendChild(makeDate('reviewDateFrom', 'Dari'));
-    toolbar.appendChild(makeDate('reviewDateTo', 'Sampai'));
-
-    const clear = document.createElement('button');
-    clear.type = 'button';
-    clear.className = 'cm-clear-filter';
-    clear.innerHTML = '<i class="fas fa-rotate-left"></i> Reset';
-    clear.addEventListener('click', () => {
-        ['reviewDateFrom', 'reviewDateTo'].forEach(id => {
-            const el = document.getElementById(id);
-            if (el) el.value = '';
-        });
-        if (typeof applyDataFilters === 'function') applyDataFilters();
-    });
-    toolbar.appendChild(clear);
-}
-
 async function loadDashboard() {
     bootModernUI();
     try {
         const response = await apiRequest('getDashboardStats', {});
-        if (response.success && response.data) {
+        if (response && response.success && response.data) {
             const stats = response.data;
-            document.getElementById('statOnline').textContent = stats.online || 0;
-            document.getElementById('statChecking').textContent = stats.checking || 0;
-            document.getElementById('statCompleted').textContent = stats.completed || 0;
-            document.getElementById('statPending').textContent = stats.pending || 0;
-            document.getElementById('onlineCount').textContent = stats.online || 0;
+            setText('statOnline', stats.online);
+            setText('statChecking', stats.checking);
+            setText('statCompleted', stats.completed);
+            setText('statPending', stats.pending);
         }
     } catch (e) {
-        console.error('Load dashboard error:', e);
+        console.error('Load dashboard stats error:', e);
     }
-    loadLiveActivities();
-    loadOnlineUsersList();
+
+    // These are independent requests. One failing endpoint must not break the rest.
+    await Promise.allSettled([loadLiveActivities(), loadOnlineUsersList()]);
 }
 
 async function loadLiveActivities() {
-    const container = document.getElementById('liveActivities');
+    const container = document.getElementById('recentActivities');
     if (!container) return;
     try {
         const response = await apiRequest('getRecentActivities', { limit: 20 });
-        if (response.success && response.data && response.data.length > 0) {
-            container.innerHTML = response.data.map(item => `
-                <div class="activity-item">
-                    <span class="activity-time">${formatTime(item.timestamp)}</span>
-                    <span class="activity-user">${escapeHTML(item.nama || item.user || '-')}</span>
-                    <span class="activity-action">${escapeHTML(item.action || '-')}</span>
-                    <span class="activity-detail">${escapeHTML(item.detail || '')}</span>
-                </div>
-            `).join('');
-        } else container.innerHTML = '<div class="loading-text">Belum ada aktivitas</div>';
-    } catch (e) { container.innerHTML = '<div class="loading-text">Gagal memuat aktivitas</div>'; }
+        const data = response && response.success && Array.isArray(response.data) ? response.data : [];
+        if (!data.length) {
+            container.innerHTML = '<div class="loading-text">Belum ada aktivitas</div>';
+            return;
+        }
+        container.innerHTML = data.map(item => `
+            <div class="activity-item">
+                <span class="activity-time">${formatTime(item.timestamp)}</span>
+                <span class="activity-user">${escapeHTML(item.nama || item.user || '-')}</span>
+                <span class="activity-action">${escapeHTML(item.action || '-')}</span>
+                <span class="activity-detail">${escapeHTML(item.detail || '')}</span>
+            </div>
+        `).join('');
+    } catch (e) {
+        console.error('Load activities error:', e);
+        container.innerHTML = '<div class="loading-text">Gagal memuat aktivitas</div>';
+    }
 }
 
 async function loadOnlineUsersList() {
+    // The current HTML does not have a separate online-user card.
+    // Do not throw when that optional panel is absent.
     const container = document.getElementById('onlineUsersList');
     if (!container) return;
     try {
         const response = await apiRequest('getOnlineUsers', {});
-        if (response.success && response.data) {
-            const users = response.data;
-            if (!users.length) {
-                container.innerHTML = '<div class="loading-text">Tidak ada user online</div>';
-                return;
-            }
-            container.innerHTML = users.map(user => `
-                <div class="online-user-item">
-                    <span class="user-status-dot ${user.status === 'ONLINE' ? 'online pulse' : user.status === 'CHECKING' ? 'checking' : 'offline'}"></span>
-                    <div class="user-monitor-info">
-                        <div class="name">${escapeHTML(user.nama || user.username || '-')}</div>
-                        <div class="role">${escapeHTML(user.role || '-')}</div>
-                        ${user.current_no_hp ? `<div class="checking-data"><i class="fas fa-phone"></i> ${escapeHTML(user.current_no_hp)}</div>` : ''}
-                    </div>
-                </div>
-            `).join('');
+        const users = response && response.success && Array.isArray(response.data) ? response.data : [];
+        if (!users.length) {
+            container.innerHTML = '<div class="loading-text">Tidak ada user online</div>';
+            return;
         }
-    } catch (e) { container.innerHTML = '<div class="loading-text">Gagal memuat user online</div>'; }
+        container.innerHTML = users.map(user => `
+            <div class="online-user-item">
+                <span class="user-status-dot ${user.status === 'ONLINE' ? 'online pulse' : user.status === 'CHECKING' ? 'checking' : 'offline'}"></span>
+                <div class="user-monitor-info">
+                    <div class="name">${escapeHTML(user.nama || user.username || '-')}</div>
+                    <div class="role">${escapeHTML(user.role || '-')}</div>
+                    ${user.current_no_hp ? `<div class="checking-data"><i class="fas fa-phone"></i> ${escapeHTML(user.current_no_hp)}</div>` : ''}
+                </div>
+            </div>
+        `).join('');
+    } catch (e) {
+        console.error('Load online users error:', e);
+        container.innerHTML = '<div class="loading-text">Gagal memuat user online</div>';
+    }
+}
+
+function setText(id, value) {
+    const el = document.getElementById(id);
+    if (el) el.textContent = value ?? 0;
 }
 
 function escapeHTML(value) {
-    return String(value ?? '').replace(/[&<>"']/g, char => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#039;'}[char]));
+    return String(value ?? '').replace(/[&<>"']/g, char => ({ '&':'&amp;', '<':'&lt;', '>':'&gt;', '"':'&quot;', "'":'&#039;' }[char]));
 }
 
 function formatTime(timestamp) {
     if (!timestamp) return '-';
     try { return new Date(timestamp).toLocaleTimeString('id-ID', { hour12: false }); }
-    catch (e) { return timestamp; }
+    catch (e) { return String(timestamp); }
 }
 
-if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', bootModernUI); else bootModernUI();
+if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', bootModernUI, { once: true });
+else bootModernUI();
