@@ -59,6 +59,36 @@ function installBranding() {
       .sidebar-brand{display:flex;align-items:center;gap:11px}
       .login-card>h1{margin-top:0}
       .cm-brand-name{font-weight:800;letter-spacing:-.02em}
+
+      /* Pull to Dashboard visual system */
+      :root{--pt-gold:#d9a83f;--pt-gold2:#ffe69a;--pt-black:#05070b;--pt-panel:#0d1119;--pt-line:rgba(217,168,63,.18)}
+      body{background:radial-gradient(900px 520px at 78% -12%,rgba(217,168,63,.13),transparent 60%),radial-gradient(720px 500px at 8% 100%,rgba(217,168,63,.06),transparent 62%),#05070b}
+      .login-page{background:radial-gradient(circle at 50% 40%,rgba(217,168,63,.08),transparent 34%),#05070b}
+      .login-card{border:1px solid var(--pt-line)!important;background:linear-gradient(145deg,rgba(20,20,22,.94),rgba(7,8,11,.96))!important;box-shadow:0 30px 100px rgba(0,0,0,.62),0 0 70px rgba(217,168,63,.08)!important}
+      .login-card h1{font-weight:800;letter-spacing:-.045em}
+      .login-card p{color:#a9a39a}
+      .login-card input{border-color:rgba(217,168,63,.14)!important}
+      .login-card input:focus{border-color:rgba(217,168,63,.55)!important;box-shadow:0 0 0 3px rgba(217,168,63,.08)!important}
+      .btn-login{background:linear-gradient(135deg,#9b6412,#e2b84e 48%,#8a5308)!important;border:1px solid rgba(255,230,154,.25)!important;color:#fff8df!important;box-shadow:0 14px 30px rgba(180,120,25,.18)!important}
+      .sidebar{background:linear-gradient(180deg,#090b10,#05070b)!important;border-right:1px solid var(--pt-line)!important}
+      .sidebar-brand{height:82px!important;border-bottom:1px solid var(--pt-line)!important}
+      .sidebar-brand span{font-weight:800;color:#f4e7c2}
+      .menu-item.active{background:linear-gradient(90deg,rgba(217,168,63,.17),rgba(217,168,63,.035))!important;border-color:rgba(217,168,63,.2)!important;box-shadow:inset 3px 0 0 var(--pt-gold)!important}
+      .menu-item.active i{color:var(--pt-gold2)}
+      .main-content{background:transparent}
+      .topbar{position:sticky;top:0;z-index:40;display:flex;align-items:center;justify-content:space-between;min-height:72px;padding:0 8px 0 4px;margin-bottom:24px;background:rgba(5,7,11,.78);backdrop-filter:blur(18px);border-bottom:1px solid rgba(217,168,63,.10)}
+      .topbar>div:first-child{display:flex;align-items:center;gap:12px}
+      .topbar strong{font-size:22px;letter-spacing:-.035em}
+      .topbar-right{display:flex;align-items:center;gap:10px;color:#a9a39a;font-size:12px}
+      .topbar-right span{padding:8px 11px;border:1px solid rgba(217,168,63,.10);border-radius:999px;background:rgba(255,255,255,.025)}
+      .stat-card{background:linear-gradient(145deg,rgba(19,20,24,.94),rgba(9,11,15,.92))!important;border-color:rgba(217,168,63,.12)!important}
+      .stat-card:hover{border-color:rgba(217,168,63,.32)!important;transform:translateY(-2px)}
+      .card{background:linear-gradient(145deg,rgba(17,19,24,.92),rgba(8,10,14,.92))!important;border-color:rgba(217,168,63,.11)!important}
+      .card-header{border-bottom:1px solid rgba(217,168,63,.08)}
+      .page-toolbar{background:rgba(12,14,18,.84)!important;border-color:rgba(217,168,63,.12)!important}
+      .btn-primary,.btn-refresh{background:linear-gradient(135deg,rgba(154,101,18,.22),rgba(217,168,63,.08))!important;border-color:rgba(217,168,63,.25)!important;color:#f6e4b7!important}
+      .modal-content{background:linear-gradient(145deg,#15171c,#080a0e)!important;border-color:rgba(217,168,63,.2)!important}
+      @media(max-width:760px){.topbar{min-height:62px}.topbar strong{font-size:18px}.topbar-right span:first-child{display:none}.sidebar{box-shadow:25px 0 70px rgba(0,0,0,.55)!important}}
     `;
     document.head.appendChild(style);
 
