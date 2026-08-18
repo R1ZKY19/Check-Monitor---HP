@@ -5,7 +5,7 @@
 
 const CONFIG = {
     // Ganti dengan URL Web App Anda setelah deploy
-    API_URL: 'https://script.google.com/macros/s/AKfycbzP06YApGzDdAQBuw4Uk5wMbiVmW57Klo4FKWX_BDvh83QKCBMITUVJlDsPZUZBNoX-/exec',
+    API_URL: 'https://script.google.com/macros/s/AKfycbwO386lWJFSfpP2RIXQ7tlC5uCjsZLZUaKLOMPVOP6FtSsSuH1sjKdc8qI_JaFF-zA/exec',
     
     // Interval polling dalam milidetik
     POLLING_INTERVAL: 5000, // 5 detik
