@@ -8,7 +8,7 @@ const CONFIG = {
     HEARTBEAT_INTERVAL: 30000,
     OFFLINE_TIMEOUT: 60,
     ITEMS_PER_PAGE: 20,
-    VERSION: '3.1.0'
+    VERSION: '3.2.0'
 };
 
 const STORAGE_KEYS = {
@@ -58,43 +58,27 @@ function installBranding() {
       .sidebar-brand .cm-brand-logo{width:42px;height:42px;flex:0 0 42px}
       .sidebar-brand{display:flex;align-items:center;gap:11px}
       .login-card>h1{margin-top:0}
-      .cm-brand-name{font-weight:800;letter-spacing:-.02em}
-
-      /* Pull to Dashboard visual system */
       :root{--pt-gold:#d9a83f;--pt-gold2:#ffe69a;--pt-black:#05070b;--pt-panel:#0d1119;--pt-line:rgba(217,168,63,.18)}
       body{background:radial-gradient(900px 520px at 78% -12%,rgba(217,168,63,.13),transparent 60%),radial-gradient(720px 500px at 8% 100%,rgba(217,168,63,.06),transparent 62%),#05070b}
       .login-page{background:radial-gradient(circle at 50% 40%,rgba(217,168,63,.08),transparent 34%),#05070b}
       .login-card{border:1px solid var(--pt-line)!important;background:linear-gradient(145deg,rgba(20,20,22,.94),rgba(7,8,11,.96))!important;box-shadow:0 30px 100px rgba(0,0,0,.62),0 0 70px rgba(217,168,63,.08)!important}
-      .login-card h1{font-weight:800;letter-spacing:-.045em}
-      .login-card p{color:#a9a39a}
-      .login-card input{border-color:rgba(217,168,63,.14)!important}
-      .login-card input:focus{border-color:rgba(217,168,63,.55)!important;box-shadow:0 0 0 3px rgba(217,168,63,.08)!important}
+      .login-card h1{font-weight:800;letter-spacing:-.045em}.login-card p{color:#a9a39a}
+      .login-card input{border-color:rgba(217,168,63,.14)!important}.login-card input:focus{border-color:rgba(217,168,63,.55)!important;box-shadow:0 0 0 3px rgba(217,168,63,.08)!important}
       .btn-login{background:linear-gradient(135deg,#9b6412,#e2b84e 48%,#8a5308)!important;border:1px solid rgba(255,230,154,.25)!important;color:#fff8df!important;box-shadow:0 14px 30px rgba(180,120,25,.18)!important}
-      .sidebar{background:linear-gradient(180deg,#090b10,#05070b)!important;border-right:1px solid var(--pt-line)!important}
-      .sidebar-brand{height:82px!important;border-bottom:1px solid var(--pt-line)!important}
-      .sidebar-brand span{font-weight:800;color:#f4e7c2}
-      .menu-item.active{background:linear-gradient(90deg,rgba(217,168,63,.17),rgba(217,168,63,.035))!important;border-color:rgba(217,168,63,.2)!important;box-shadow:inset 3px 0 0 var(--pt-gold)!important}
-      .menu-item.active i{color:var(--pt-gold2)}
-      .main-content{background:transparent}
-      .topbar{position:sticky;top:0;z-index:40;display:flex;align-items:center;justify-content:space-between;min-height:72px;padding:0 8px 0 4px;margin-bottom:24px;background:rgba(5,7,11,.78);backdrop-filter:blur(18px);border-bottom:1px solid rgba(217,168,63,.10)}
-      .topbar>div:first-child{display:flex;align-items:center;gap:12px}
-      .topbar strong{font-size:22px;letter-spacing:-.035em}
-      .topbar-right{display:flex;align-items:center;gap:10px;color:#a9a39a;font-size:12px}
-      .topbar-right span{padding:8px 11px;border:1px solid rgba(217,168,63,.10);border-radius:999px;background:rgba(255,255,255,.025)}
-      .stat-card{background:linear-gradient(145deg,rgba(19,20,24,.94),rgba(9,11,15,.92))!important;border-color:rgba(217,168,63,.12)!important}
-      .stat-card:hover{border-color:rgba(217,168,63,.32)!important;transform:translateY(-2px)}
-      .card{background:linear-gradient(145deg,rgba(17,19,24,.92),rgba(8,10,14,.92))!important;border-color:rgba(217,168,63,.11)!important}
-      .card-header{border-bottom:1px solid rgba(217,168,63,.08)}
-      .page-toolbar{background:rgba(12,14,18,.84)!important;border-color:rgba(217,168,63,.12)!important}
-      .btn-primary,.btn-refresh{background:linear-gradient(135deg,rgba(154,101,18,.22),rgba(217,168,63,.08))!important;border-color:rgba(217,168,63,.25)!important;color:#f6e4b7!important}
-      .modal-content{background:linear-gradient(145deg,#15171c,#080a0e)!important;border-color:rgba(217,168,63,.2)!important}
+      .sidebar{background:linear-gradient(180deg,#090b10,#05070b)!important;border-right:1px solid var(--pt-line)!important}.sidebar-brand{height:82px!important;border-bottom:1px solid var(--pt-line)!important}.sidebar-brand span{font-weight:800;color:#f4e7c2}
+      .menu-item.active{background:linear-gradient(90deg,rgba(217,168,63,.17),rgba(217,168,63,.035))!important;border-color:rgba(217,168,63,.2)!important;box-shadow:inset 3px 0 0 var(--pt-gold)!important}.menu-item.active i{color:var(--pt-gold2)}
+      .main-content{background:transparent}.topbar{position:sticky;top:0;z-index:40;display:flex;align-items:center;justify-content:space-between;min-height:72px;padding:0 8px 0 4px;margin-bottom:24px;background:rgba(5,7,11,.78);backdrop-filter:blur(18px);border-bottom:1px solid rgba(217,168,63,.10)}
+      .topbar>div:first-child{display:flex;align-items:center;gap:12px}.topbar strong{font-size:22px;letter-spacing:-.035em}.topbar-right{display:flex;align-items:center;gap:10px;color:#a9a39a;font-size:12px}.topbar-right span{padding:8px 11px;border:1px solid rgba(217,168,63,.10);border-radius:999px;background:rgba(255,255,255,.025)}
+      .stat-card{background:linear-gradient(145deg,rgba(19,20,24,.94),rgba(9,11,15,.92))!important;border-color:rgba(217,168,63,.12)!important}.stat-card:hover{border-color:rgba(217,168,63,.32)!important;transform:translateY(-2px)}
+      .card{background:linear-gradient(145deg,rgba(17,19,24,.92),rgba(8,10,14,.92))!important;border-color:rgba(217,168,63,.11)!important}.card-header{border-bottom:1px solid rgba(217,168,63,.08)}
+      .page-toolbar{background:rgba(12,14,18,.84)!important;border-color:rgba(217,168,63,.12)!important}.btn-primary,.btn-refresh{background:linear-gradient(135deg,rgba(154,101,18,.22),rgba(217,168,63,.08))!important;border-color:rgba(217,168,63,.25)!important;color:#f6e4b7!important}.modal-content{background:linear-gradient(145deg,#15171c,#080a0e)!important;border-color:rgba(217,168,63,.2)!important}
+      .cm-data-table-wrap{overflow:auto}.cm-data-table{width:100%;border-collapse:separate;border-spacing:0;min-width:820px}.cm-data-table th{position:sticky;top:0;background:#0d1119;color:#b8aa89;font-size:11px;padding:12px;text-align:left;border-bottom:1px solid rgba(217,168,63,.14)}.cm-data-table td{padding:12px;border-bottom:1px solid rgba(255,255,255,.06);color:#e6e1d7}.cm-data-toolbar{display:flex;gap:10px;flex-wrap:wrap;margin-bottom:14px}.cm-data-toolbar select{height:42px;padding:0 12px;background:rgba(255,255,255,.04);color:#eee;border:1px solid rgba(217,168,63,.12);border-radius:10px}.cm-pagination{display:flex;justify-content:center;align-items:center;gap:10px;padding-top:14px}.cm-pagination button{min-width:38px;height:38px;cursor:pointer}.cm-pagination button:disabled{opacity:.4;cursor:not-allowed}
       @media(max-width:760px){.topbar{min-height:62px}.topbar strong{font-size:18px}.topbar-right span:first-child{display:none}.sidebar{box-shadow:25px 0 70px rgba(0,0,0,.55)!important}}
     `;
     document.head.appendChild(style);
 
     const loginLogo = document.querySelector('.login-logo');
     if (loginLogo) loginLogo.innerHTML = DASHBOARD_LOGO_SVG;
-
     const sidebarBrand = document.querySelector('.sidebar-brand');
     if (sidebarBrand) {
         const icon = sidebarBrand.querySelector('i');
@@ -102,17 +86,49 @@ function installBranding() {
         const logo = sidebarBrand.querySelector('svg');
         if (logo) logo.classList.add('cm-brand-logo');
     }
-
     let favicon = document.querySelector('link[data-cm-favicon]');
-    if (!favicon) {
-        favicon = document.createElement('link');
-        favicon.rel = 'icon';
-        favicon.dataset.cmFavicon = '1';
-        document.head.appendChild(favicon);
-    }
+    if (!favicon) { favicon = document.createElement('link'); favicon.rel = 'icon'; favicon.dataset.cmFavicon = '1'; document.head.appendChild(favicon); }
     favicon.href = 'data:image/svg+xml;charset=utf-8,' + encodeURIComponent(DASHBOARD_LOGO_SVG);
     document.title = 'Pull to Dashboard';
 }
 
-if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', installBranding, { once: true });
-else installBranding();
+function ensureDashboardControls() {
+    const page = document.getElementById('page-datahp');
+    const host = document.getElementById('dataHPContainer');
+    if (!page || !host) return;
+
+    if (!document.getElementById('dataTableBody')) {
+        host.innerHTML = `
+          <div class="cm-data-toolbar">
+            <select id="filterStatus"><option value="">Semua Status</option><option value="BELUM_DICEK">Belum Dicek</option><option value="SEDANG_DICEK">Sedang Dicek</option><option value="SUDAH_DICEK">Sudah Dicek</option></select>
+            <select id="filterPetugas"><option value="">Semua Petugas</option></select>
+          </div>
+          <div class="cm-data-table-wrap"><table class="cm-data-table"><thead><tr><th>#</th><th>NAMA</th><th>NO HP</th><th>STATUS</th><th>PETUGAS</th><th>MULAI</th><th>SELESAI</th><th>AKSI</th></tr></thead><tbody id="dataTableBody"><tr><td colspan="8" class="loading-text">Siap memuat data...</td></tr></tbody></table></div>
+          <div class="cm-pagination"><button id="prevBtn" type="button" onclick="prevPage()">‹</button><span id="pageInfo">Halaman 1 dari 1</span><button id="nextBtn" type="button" onclick="nextPage()">›</button></div>`;
+    }
+
+    if (!document.getElementById('activityPageInfo')) {
+        const activityPage = document.getElementById('activityLogContainer');
+        if (activityPage) {
+            activityPage.insertAdjacentHTML('beforeend', '<div class="cm-pagination"><button id="prevActivityBtn" type="button" onclick="prevActivityPage()">‹</button><span id="activityPageInfo">Halaman 1 dari 1</span><button id="nextActivityBtn" type="button" onclick="nextActivityPage()">›</button></div>');
+        }
+    }
+
+    const search = document.getElementById('searchData');
+    if (search && !search.dataset.bound) { search.dataset.bound = '1'; search.addEventListener('input', () => filterData()); }
+    const status = document.getElementById('filterStatus');
+    if (status && !status.dataset.bound) { status.dataset.bound = '1'; status.addEventListener('change', () => { currentPage = 1; applyDataFilters(); }); }
+    const petugas = document.getElementById('filterPetugas');
+    if (petugas && !petugas.dataset.bound) { petugas.dataset.bound = '1'; petugas.addEventListener('change', () => { currentPage = 1; applyDataFilters(); }); }
+}
+
+function safeStart() {
+    try { ensureDashboardControls(); } catch (e) { console.error('Dashboard controls:', e); }
+}
+
+if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', () => { installBranding(); safeStart(); }, { once: true });
+} else {
+    installBranding();
+    safeStart();
+}
