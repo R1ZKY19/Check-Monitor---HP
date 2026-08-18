@@ -1,6 +1,6 @@
 /**
  * API Client untuk Google Apps Script
- * Versi lebih stabil untuk Web App cross-origin.
+ * Stable cross-origin requests with safe local session restore.
  */
 
 const API_TIMEOUT = 15000;
@@ -9,35 +9,29 @@ async function apiRequest(action, data = {}) {
     const url = CONFIG.API_URL;
     const token = localStorage.getItem(STORAGE_KEYS.TOKEN);
 
-    // Refresh-safe session: the browser already has the last verified user.
-    // Do not block F5 on a cold Google Apps Script request.
+    // Refresh must never throw the user out just because Apps Script is cold/slow.
+    // A token + cached user is enough to restore the UI; the backend is still used
+    // for actual data operations below.
     if (action === 'getCurrentUser' && token) {
         const cachedUser = localStorage.getItem(STORAGE_KEYS.USER);
         if (cachedUser) {
             try {
                 const user = JSON.parse(cachedUser);
                 if (user && typeof user === 'object') {
-                    return { success: true, data: user, cached: true };
+                    return { success: true, data: user, local: true };
                 }
             } catch (e) {
-                localStorage.removeItem(STORAGE_KEYS.USER);
+                console.warn('Cached user invalid, falling back to server');
             }
         }
     }
 
-    const payload = {
-        action,
-        data,
-        token
-    };
-
+    const payload = { action, data, token };
     const controller = new AbortController();
     const timeoutId = setTimeout(() => controller.abort(), API_TIMEOUT);
 
     try {
-        if (!url || !/^https:\/\//i.test(url)) {
-            throw new Error('API_URL tidak valid');
-        }
+        if (!url || !/^https:\/\//i.test(url)) throw new Error('API_URL tidak valid');
 
         const response = await fetch(url, {
             method: 'POST',
@@ -51,15 +45,10 @@ async function apiRequest(action, data = {}) {
             signal: controller.signal
         });
 
-        if (!response.ok) {
-            throw new Error(`HTTP ${response.status} ${response.statusText}`);
-        }
+        if (!response.ok) throw new Error(`HTTP ${response.status} ${response.statusText}`);
 
         const raw = await response.text();
-
-        if (!raw) {
-            throw new Error('Server mengembalikan response kosong');
-        }
+        if (!raw) throw new Error('Server mengembalikan response kosong');
 
         let result;
         try {
@@ -69,28 +58,13 @@ async function apiRequest(action, data = {}) {
             throw new Error('Response server bukan JSON yang valid');
         }
 
-        if (!result || typeof result !== 'object') {
-            throw new Error('Format response server tidak valid');
-        }
-
+        if (!result || typeof result !== 'object') throw new Error('Format response server tidak valid');
         return result;
     } catch (error) {
         const isTimeout = error?.name === 'AbortError';
-        const message = isTimeout
-            ? 'Server terlalu lama merespons'
-            : (error?.message || 'Gagal terhubung ke server');
-
-        console.error('API Error:', {
-            action,
-            url,
-            message,
-            error
-        });
-
-        return {
-            success: false,
-            message
-        };
+        const message = isTimeout ? 'Server terlalu lama merespons' : (error?.message || 'Gagal terhubung ke server');
+        console.error('API Error:', { action, url, message, error });
+        return { success: false, message };
     } finally {
         clearTimeout(timeoutId);
     }
@@ -102,14 +76,9 @@ let lastRequestTime = {};
 function apiRequestWithCache(action, data = {}, cacheTime = 5000) {
     const key = action + JSON.stringify(data);
     const now = Date.now();
-
-    if (
-        Object.prototype.hasOwnProperty.call(requestCache, key) &&
-        (now - lastRequestTime[key] < cacheTime)
-    ) {
+    if (Object.prototype.hasOwnProperty.call(requestCache, key) && (now - lastRequestTime[key] < cacheTime)) {
         return Promise.resolve(requestCache[key]);
     }
-
     return apiRequest(action, data).then(result => {
         requestCache[key] = result;
         lastRequestTime[key] = Date.now();
