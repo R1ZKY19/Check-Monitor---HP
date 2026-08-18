@@ -1,205 +1,23 @@
 /**
  * Data HP & Activity Handler
+ * Stable version: builds its own table so it does not depend on missing HTML IDs.
  */
-
-let currentPage = 1;
-let totalPages = 1;
-let allDataHP = [];
-let filteredDataHP = [];
-
-async function loadDataHP() {
-    const container = document.getElementById('dataTableBody');
-    container.innerHTML = '<tr><td colspan="8" class="loading-text">Memuat data...</td></tr>';
-    try {
-        const response = await apiRequest('getDataHP', { page: currentPage, limit: CONFIG.ITEMS_PER_PAGE });
-        if (response.success) {
-            allDataHP = response.data || [];
-            totalPages = response.totalPages || 1;
-            populatePetugasFilter(allDataHP);
-            applyDataFilters();
-        } else container.innerHTML = '<tr><td colspan="8" class="loading-text">Gagal memuat data</td></tr>';
-    } catch (e) {
-        container.innerHTML = '<tr><td colspan="8" class="loading-text">Gagal memuat data</td></tr>';
-    }
-}
-
-function populatePetugasFilter(data) {
-    const select = document.getElementById('filterPetugas');
-    if (!select) return;
-    const currentValue = select.value;
-    const petugas = new Set();
-    data.forEach(item => { if (item.petugas_nama) petugas.add(item.petugas_nama); });
-    select.innerHTML = '<option value="">Semua Petugas</option>';
-    petugas.forEach(p => {
-        const option = document.createElement('option');
-        option.value = p;
-        option.textContent = p;
-        select.appendChild(option);
-    });
-    select.value = currentValue;
-}
-
-function filterData() { applyDataFilters(); }
-
-function normalizeDate(value) {
-    if (!value) return '';
-    const d = new Date(value);
-    if (Number.isNaN(d.getTime())) return String(value).slice(0, 10);
-    return d.toISOString().slice(0, 10);
-}
-
-function getReviewDate(item) {
-    return normalizeDate(item.tanggal || item.timestamp || item.waktu_selesai || item.waktu_mulai || item.created_at);
-}
-
-function applyDataFilters() {
-    const search = (document.getElementById('searchData')?.value || '').toLowerCase().trim();
-    const status = document.getElementById('filterStatus')?.value || '';
-    const petugas = document.getElementById('filterPetugas')?.value || '';
-    const from = document.getElementById('reviewDateFrom')?.value || '';
-    const to = document.getElementById('reviewDateTo')?.value || '';
-
-    filteredDataHP = allDataHP.filter(item => {
-        const haystack = [item.nama, item.no_hp, item.bank, item.kategori, item.data, item.petugas_nama]
-            .filter(Boolean).join(' ').toLowerCase();
-        const date = getReviewDate(item);
-        const matchSearch = !search || haystack.includes(search);
-        const matchStatus = !status || item.status === status;
-        const matchPetugas = !petugas || item.petugas_nama === petugas;
-        const matchFrom = !from || !date || date >= from;
-        const matchTo = !to || !date || date <= to;
-        return matchSearch && matchStatus && matchPetugas && matchFrom && matchTo;
-    });
-
-    totalPages = Math.max(1, Math.ceil(filteredDataHP.length / CONFIG.ITEMS_PER_PAGE));
-    if (currentPage > totalPages) currentPage = totalPages;
-    renderDataTable();
-}
-
-function safeText(value) {
-    return String(value ?? '-').replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#039;'}[c]));
-}
-
-function renderDataTable() {
-    const container = document.getElementById('dataTableBody');
-    const start = (currentPage - 1) * CONFIG.ITEMS_PER_PAGE;
-    const pageData = filteredDataHP.slice(start, start + CONFIG.ITEMS_PER_PAGE);
-
-    if (!pageData.length) {
-        container.innerHTML = '<tr><td colspan="8" class="loading-text">Tidak ada data sesuai filter</td></tr>';
-    } else {
-        container.innerHTML = pageData.map((item, index) => {
-            const no = start + index + 1;
-            const statusClass = item.status === 'BELUM_DICEK' ? 'belum' : item.status === 'SEDANG_DICEK' ? 'sedang' : 'sudah';
-            const statusLabel = item.status === 'BELUM_DICEK' ? 'Belum Dicek' : item.status === 'SEDANG_DICEK' ? 'Sedang Dicek' : 'Sudah Dicek';
-            let actionHtml = '';
-            const user = getCurrentUser();
-
-            if (item.status === 'BELUM_DICEK' && user && isPetugas()) {
-                actionHtml = `<button class="btn-action btn-cek" onclick="startCheck('${safeText(item.data_id)}')"><i class="fas fa-play"></i> CEK</button>`;
-            } else if (item.status === 'SEDANG_DICEK' && user && isPetugas() && item.petugas_id === user.user_id) {
-                actionHtml = `<button class="btn-action btn-selesai" onclick="finishCheck('${safeText(item.data_id)}')"><i class="fas fa-check"></i> SELESAI</button>`;
-            } else if (item.status === 'SEDANG_DICEK') {
-                actionHtml = `<span class="status-badge sedang">Diproses ${safeText(item.petugas_nama || '')}</span>`;
-            } else {
-                actionHtml = `<button class="btn-action btn-detail" onclick="showDetail('${safeText(item.data_id)}')"><i class="fas fa-info-circle"></i> DETAIL</button>`;
-            }
-
-            return `<tr>
-                <td>${no}</td>
-                <td><strong>${safeText(item.nama)}</strong></td>
-                <td>${safeText(item.no_hp)}</td>
-                <td><span class="status-badge ${statusClass}">${statusLabel}</span></td>
-                <td>${safeText(item.petugas_nama)}</td>
-                <td>${item.waktu_mulai ? formatTime(item.waktu_mulai) : '-'}</td>
-                <td>${item.waktu_selesai ? formatTime(item.waktu_selesai) : '-'}</td>
-                <td>${actionHtml}</td>
-            </tr>`;
-        }).join('');
-    }
-    updatePagination();
-}
-
-function updatePagination() {
-    document.getElementById('pageInfo').textContent = `Halaman ${currentPage} dari ${totalPages}`;
-    document.getElementById('prevBtn').disabled = currentPage <= 1;
-    document.getElementById('nextBtn').disabled = currentPage >= totalPages;
-}
-
-function prevPage() { if (currentPage > 1) { currentPage--; renderDataTable(); } }
-function nextPage() { if (currentPage < totalPages) { currentPage++; renderDataTable(); } }
-
-async function startCheck(dataId) {
-    if (!dataId) return;
-    try {
-        const response = await apiRequest('startCheck', { dataId });
-        if (response.success) { showToast('Data berhasil diambil', 'success'); loadDataHP(); loadDashboard(); }
-        else showToast(response.message || 'Gagal mengambil data', 'error');
-    } catch (e) { showToast('Terjadi kesalahan', 'error'); }
-}
-
-async function finishCheck(dataId) {
-    if (!dataId || !confirm('Yakin data ini sudah selesai dicek?')) return;
-    try {
-        const response = await apiRequest('finishCheck', { dataId });
-        if (response.success) { showToast('Pengecekan selesai!', 'success'); loadDataHP(); loadDashboard(); }
-        else showToast(response.message || 'Gagal menyelesaikan', 'error');
-    } catch (e) { showToast('Terjadi kesalahan', 'error'); }
-}
-
-async function showDetail(dataId) {
-    if (!dataId) return;
-    const modal = document.getElementById('detailModal');
-    const body = document.getElementById('detailModalBody');
-    modal.classList.remove('hidden');
-    body.innerHTML = '<div class="loading-text">Memuat detail...</div>';
-    try {
-        const response = await apiRequest('getDetailData', { dataId });
-        if (response.success && response.data) {
-            const d = response.data;
-            const historyHtml = d.history?.length ? d.history.map(h => `<div class="history-item"><span class="time">${formatTime(h.timestamp)}</span>${safeText(h.nama_petugas || h.user)} - ${safeText(h.action || h.aksi)} ${h.detail ? '- ' + safeText(h.detail) : ''}</div>`).join('') : '<div class="history-item">Tidak ada riwayat</div>';
-            const statusClass = d.status === 'BELUM_DICEK' ? 'belum' : d.status === 'SEDANG_DICEK' ? 'sedang' : 'sudah';
-            body.innerHTML = `
-                <div class="detail-row"><span class="detail-label">Data ID</span><span class="detail-value">${safeText(d.data_id)}</span></div>
-                <div class="detail-row"><span class="detail-label">Nama</span><span class="detail-value">${safeText(d.nama)}</span></div>
-                <div class="detail-row"><span class="detail-label">No HP</span><span class="detail-value">${safeText(d.no_hp)}</span></div>
-                <div class="detail-row"><span class="detail-label">Status</span><span class="detail-value"><span class="status-badge ${statusClass}">${safeText(d.status)}</span></span></div>
-                <div class="detail-row"><span class="detail-label">Petugas</span><span class="detail-value">${safeText(d.petugas_nama)}</span></div>
-                <div class="detail-row"><span class="detail-label">Waktu Mulai</span><span class="detail-value">${d.waktu_mulai ? new Date(d.waktu_mulai).toLocaleString('id-ID') : '-'}</span></div>
-                <div class="detail-row"><span class="detail-label">Waktu Selesai</span><span class="detail-value">${d.waktu_selesai ? new Date(d.waktu_selesai).toLocaleString('id-ID') : '-'}</span></div>
-                ${d.durasi ? `<div class="detail-row"><span class="detail-label">Durasi</span><span class="detail-value">${safeText(d.durasi)}</span></div>` : ''}
-                <div class="detail-history"><h4>Riwayat Pengecekan</h4>${historyHtml}</div>`;
-        } else body.innerHTML = '<div class="loading-text">Gagal memuat detail</div>';
-    } catch (e) { body.innerHTML = '<div class="loading-text">Gagal memuat detail</div>'; }
-}
-
-function closeDetailModal() { document.getElementById('detailModal').classList.add('hidden'); }
-
-let activityPage = 1;
-let activityTotalPages = 1;
-
-async function loadActivityLog() {
-    const body = document.getElementById('activityLogBody');
-    body.innerHTML = '<tr><td colspan="4" class="loading-text">Memuat activity log...</td></tr>';
-    try {
-        const response = await apiRequest('getActivityLog', { page: activityPage, limit: CONFIG.ITEMS_PER_PAGE });
-        if (response.success) {
-            const data = response.data || [];
-            activityTotalPages = response.totalPages || 1;
-            body.innerHTML = data.length ? data.map(item => `<tr><td>${item.timestamp ? new Date(item.timestamp).toLocaleString('id-ID') : '-'}</td><td><strong>${safeText(item.nama || item.user)}</strong></td><td>${safeText(item.action)}</td><td>${safeText(item.detail)}</td></tr>`).join('') : '<tr><td colspan="4" class="loading-text">Tidak ada aktivitas</td></tr>';
-            updateActivityPagination();
-        } else body.innerHTML = '<tr><td colspan="4" class="loading-text">Gagal memuat activity log</td></tr>';
-    } catch (e) { body.innerHTML = '<tr><td colspan="4" class="loading-text">Gagal memuat activity log</td></tr>'; }
-}
-
-function updateActivityPagination() {
-    document.getElementById('activityPageInfo').textContent = `Halaman ${activityPage} dari ${activityTotalPages}`;
-    document.getElementById('prevActivityBtn').disabled = activityPage <= 1;
-    document.getElementById('nextActivityBtn').disabled = activityPage >= activityTotalPages;
-}
-function prevActivityPage() { if (activityPage > 1) { activityPage--; loadActivityLog(); } }
-function nextActivityPage() { if (activityPage < activityTotalPages) { activityPage++; loadActivityLog(); } }
-function filterActivity() {
-    const search = document.getElementById('searchActivity').value.toLowerCase();
-    document.querySelectorAll('#activityLogBody tr').forEach(row => row.style.display = row.textContent.toLowerCase().includes(search) ? '' : 'none');
-}
+let currentPage=1,totalPages=1,allDataHP=[],filteredDataHP=[],dataLoading=false;
+function ensureDataHPUI(){const host=document.getElementById('dataHPContainer');if(!host)return null;if(!document.getElementById('dataTableBody')){host.innerHTML=`<div class="datahp-inner"><div class="search-filters" style="display:flex;gap:10px;flex-wrap:wrap;margin-bottom:14px"><div class="search-box" style="flex:1;min-width:220px"><i class="fas fa-search"></i><input id="searchData" type="search" placeholder="Cari nama, nomor HP, bank..."></div><select id="filterStatus" class="filter-select"><option value="">Semua Status</option><option value="BELUM_DICEK">Belum Dicek</option><option value="SEDANG_DICEK">Sedang Dicek</option><option value="SUDAH_DICEK">Sudah Dicek</option></select><select id="filterPetugas" class="filter-select"><option value="">Semua Petugas</option></select><button type="button" class="btn-refresh" id="dataRefreshBtn"><i class="fas fa-sync-alt"></i> Refresh</button></div><div style="overflow:auto"><table class="data-table"><thead><tr><th>#</th><th>NAMA</th><th>NO HP</th><th>STATUS</th><th>PETUGAS</th><th>MULAI</th><th>SELESAI</th><th>AKSI</th></tr></thead><tbody id="dataTableBody"><tr><td colspan="8" class="loading-text">Memuat data...</td></tr></tbody></table></div><div class="pagination" style="display:flex;justify-content:space-between;align-items:center;margin-top:14px"><button type="button" class="btn-refresh" id="prevBtn">Sebelumnya</button><span id="pageInfo">Halaman 1 dari 1</span><button type="button" class="btn-refresh" id="nextBtn">Berikutnya</button></div></div>`;document.getElementById('searchData').addEventListener('input',()=>{currentPage=1;applyDataFilters()});document.getElementById('filterStatus').addEventListener('change',()=>{currentPage=1;applyDataFilters()});document.getElementById('filterPetugas').addEventListener('change',()=>{currentPage=1;applyDataFilters()});document.getElementById('dataRefreshBtn').addEventListener('click',()=>loadDataHP(true));document.getElementById('prevBtn').addEventListener('click',prevPage);document.getElementById('nextBtn').addEventListener('click',nextPage)}return host}
+async function loadDataHP(force=false){const host=ensureDataHPUI();if(!host||dataLoading)return;if(!force&&allDataHP.length){renderDataTable();return}const container=document.getElementById('dataTableBody');if(!container)return;dataLoading=true;container.innerHTML='<tr><td colspan="8" class="loading-text"><i class="fas fa-spinner fa-spin"></i> Memuat data...</td></tr>';try{const response=await apiRequest('getDataHP',{page:1,limit:CONFIG.ITEMS_PER_PAGE});if(!response.success)throw new Error(response.message||'Gagal memuat data HP');allDataHP=Array.isArray(response.data)?response.data:[];currentPage=1;totalPages=response.totalPages||1;populatePetugasFilter(allDataHP);applyDataFilters()}catch(e){console.error('loadDataHP:',e);container.innerHTML=`<tr><td colspan="8" class="loading-text">${safeText(e.message||'Gagal memuat data')}</td></tr>`}finally{dataLoading=false}}
+function populatePetugasFilter(data){const select=document.getElementById('filterPetugas');if(!select)return;const current=select.value,petugas=new Set();data.forEach(x=>{if(x.petugas_nama)petugas.add(x.petugas_nama)});select.innerHTML='<option value="">Semua Petugas</option>';[...petugas].sort().forEach(p=>{const o=document.createElement('option');o.value=p;o.textContent=p;select.appendChild(o)});select.value=current}
+function filterData(){currentPage=1;applyDataFilters()}
+function normalizeDate(v){if(!v)return'';const d=new Date(v);return Number.isNaN(d.getTime())?String(v).slice(0,10):d.toISOString().slice(0,10)}
+function getReviewDate(i){return normalizeDate(i.tanggal||i.timestamp||i.waktu_selesai||i.waktu_mulai||i.created_at)}
+function applyDataFilters(){const search=(document.getElementById('searchData')?.value||'').toLowerCase().trim(),status=document.getElementById('filterStatus')?.value||'',petugas=document.getElementById('filterPetugas')?.value||'',from=document.getElementById('reviewDateFrom')?.value||'',to=document.getElementById('reviewDateTo')?.value||'';filteredDataHP=allDataHP.filter(i=>{const hay=[i.nama,i.no_hp,i.bank,i.kategori,i.data,i.petugas_nama].filter(Boolean).join(' ').toLowerCase(),date=getReviewDate(i);return(!search||hay.includes(search))&&(!status||i.status===status)&&(!petugas||i.petugas_nama===petugas)&&(!from||!date||date>=from)&&(!to||!date||date<=to)});totalPages=Math.max(1,Math.ceil(filteredDataHP.length/CONFIG.ITEMS_PER_PAGE));if(currentPage>totalPages)currentPage=totalPages;renderDataTable()}
+function safeText(v){return String(v??'-').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#039;'}[c]))}
+function renderDataTable(){const container=document.getElementById('dataTableBody');if(!container)return;const start=(currentPage-1)*CONFIG.ITEMS_PER_PAGE,pageData=filteredDataHP.slice(start,start+CONFIG.ITEMS_PER_PAGE),user=getCurrentUser();if(!pageData.length){container.innerHTML='<tr><td colspan="8" class="loading-text">Tidak ada data sesuai filter</td></tr>'}else{container.innerHTML=pageData.map((item,index)=>{const no=start+index+1,sc=item.status==='BELUM_DICEK'?'belum':item.status==='SEDANG_DICEK'?'sedang':'sudah',sl=item.status==='BELUM_DICEK'?'Belum Dicek':item.status==='SEDANG_DICEK'?'Sedang Dicek':'Sudah Dicek';let action='';if(item.status==='BELUM_DICEK'&&user&&isPetugas())action=`<button class="btn-action btn-cek" onclick="startCheck('${safeText(item.data_id)}')"><i class="fas fa-play"></i> CEK</button>`;else if(item.status==='SEDANG_DICEK'&&user&&isPetugas()&&item.petugas_id===user.user_id)action=`<button class="btn-action btn-selesai" onclick="finishCheck('${safeText(item.data_id)}')"><i class="fas fa-check"></i> SELESAI</button>`;else if(item.status==='SEDANG_DICEK')action=`<span class="status-badge sedang">Diproses ${safeText(item.petugas_nama||'')}</span>`;else action=`<button class="btn-action btn-detail" onclick="showDetail('${safeText(item.data_id)}')"><i class="fas fa-info-circle"></i> DETAIL</button>`;return `<tr><td>${no}</td><td><strong>${safeText(item.nama)}</strong></td><td>${safeText(item.no_hp)}</td><td><span class="status-badge ${sc}">${sl}</span></td><td>${safeText(item.petugas_nama)}</td><td>${item.waktu_mulai?formatTime(item.waktu_mulai):'-'}</td><td>${item.waktu_selesai?formatTime(item.waktu_selesai):'-'}</td><td>${action}</td></tr>`}).join('')}updatePagination()}
+function updatePagination(){const info=document.getElementById('pageInfo'),p=document.getElementById('prevBtn'),n=document.getElementById('nextBtn');if(info)info.textContent=`Halaman ${currentPage} dari ${totalPages}`;if(p)p.disabled=currentPage<=1;if(n)n.disabled=currentPage>=totalPages}
+function prevPage(){if(currentPage>1){currentPage--;renderDataTable()}}function nextPage(){if(currentPage<totalPages){currentPage++;renderDataTable()}}
+async function startCheck(dataId){if(!dataId)return;try{const r=await apiRequest('startCheck',{dataId});if(r.success){showToast('Data berhasil diambil','success');allDataHP=[];await loadDataHP(true);if(typeof loadDashboard==='function')loadDashboard()}else showToast(r.message||'Gagal mengambil data','error')}catch(e){showToast(e.message||'Terjadi kesalahan','error')}}
+async function finishCheck(dataId){if(!dataId||!confirm('Yakin data ini sudah selesai dicek?'))return;try{const r=await apiRequest('finishCheck',{dataId});if(r.success){showToast('Pengecekan selesai!','success');allDataHP=[];await loadDataHP(true);if(typeof loadDashboard==='function')loadDashboard()}else showToast(r.message||'Gagal menyelesaikan','error')}catch(e){showToast(e.message||'Terjadi kesalahan','error')}}
+async function showDetail(dataId){if(!dataId)return;const modal=document.getElementById('detailModal'),body=document.getElementById('detailModalBody');if(!modal||!body)return;modal.classList.remove('hidden');body.innerHTML='<div class="loading-text">Memuat detail...</div>';try{const r=await apiRequest('getDetailData',{dataId});if(!r.success||!r.data)throw new Error(r.message||'Gagal memuat detail');const d=r.data,history=d.history?.length?d.history.map(h=>`<div class="history-item"><span class="time">${formatTime(h.timestamp)}</span> ${safeText(h.nama_petugas||h.user)} - ${safeText(h.action||h.aksi)} ${h.detail?'- '+safeText(h.detail):''}</div>`).join(''):'<div class="history-item">Tidak ada riwayat</div>',sc=d.status==='BELUM_DICEK'?'belum':d.status==='SEDANG_DICEK'?'sedang':'sudah';body.innerHTML=`<div class="detail-row"><span class="detail-label">Data ID</span><span class="detail-value">${safeText(d.data_id)}</span></div><div class="detail-row"><span class="detail-label">Nama</span><span class="detail-value">${safeText(d.nama)}</span></div><div class="detail-row"><span class="detail-label">No HP</span><span class="detail-value">${safeText(d.no_hp)}</span></div><div class="detail-row"><span class="detail-label">Status</span><span class="detail-value"><span class="status-badge ${sc}">${safeText(d.status)}</span></span></div><div class="detail-row"><span class="detail-label">Petugas</span><span class="detail-value">${safeText(d.petugas_nama)}</span></div><div class="detail-row"><span class="detail-label">Waktu Mulai</span><span class="detail-value">${d.waktu_mulai?new Date(d.waktu_mulai).toLocaleString('id-ID'):'-'}</span></div><div class="detail-row"><span class="detail-label">Waktu Selesai</span><span class="detail-value">${d.waktu_selesai?new Date(d.waktu_selesai).toLocaleString('id-ID'):'-'}</span></div>${d.durasi?`<div class="detail-row"><span class="detail-label">Durasi</span><span class="detail-value">${safeText(d.durasi)}</span></div>`:''}<div class="detail-history"><h4>Riwayat Pengecekan</h4>${history}</div>`}catch(e){body.innerHTML=`<div class="loading-text">${safeText(e.message||'Gagal memuat detail')}</div>`}}
+function closeDetailModal(){document.getElementById('detailModal')?.classList.add('hidden')}
+let activityPage=1,activityTotalPages=1;async function loadActivityLog(){const body=document.getElementById('activityLogBody');if(!body)return;body.innerHTML='<tr><td colspan="4" class="loading-text">Memuat activity log...</td></tr>';try{const r=await apiRequest('getActivityLog',{page:activityPage,limit:CONFIG.ITEMS_PER_PAGE});if(!r.success)throw new Error(r.message||'Gagal memuat activity log');const data=r.data||[];activityTotalPages=r.totalPages||1;body.innerHTML=data.length?data.map(i=>`<tr><td>${i.timestamp?new Date(i.timestamp).toLocaleString('id-ID'):'-'}</td><td><strong>${safeText(i.nama||i.user)}</strong></td><td>${safeText(i.action)}</td><td>${safeText(i.detail)}</td></tr>`).join(''):'<tr><td colspan="4" class="loading-text">Tidak ada aktivitas</td></tr>';updateActivityPagination()}catch(e){body.innerHTML=`<tr><td colspan="4" class="loading-text">${safeText(e.message||'Gagal memuat activity log')}</td></tr>`}}
+function updateActivityPagination(){const i=document.getElementById('activityPageInfo'),p=document.getElementById('prevActivityBtn'),n=document.getElementById('nextActivityBtn');if(i)i.textContent=`Halaman ${activityPage} dari ${activityTotalPages}`;if(p)p.disabled=activityPage<=1;if(n)n.disabled=activityPage>=activityTotalPages}
+function prevActivityPage(){if(activityPage>1){activityPage--;loadActivityLog()}}function nextActivityPage(){if(activityPage<activityTotalPages){activityPage++;loadActivityLog()}}function filterActivity(){const i=document.getElementById('searchActivity'),s=(i?.value||'').toLowerCase();document.querySelectorAll('#activityLogBody tr').forEach(r=>r.style.display=r.textContent.toLowerCase().includes(s)?'':'none')}
