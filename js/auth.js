@@ -1,51 +1,43 @@
 /**
- * Authentication Handler
+ * Authentication + dashboard session handler
+ * Designed to keep the UI responsive and survive browser refresh.
  */
 
-// Get current user
 function getCurrentUser() {
     const userData = localStorage.getItem(STORAGE_KEYS.USER);
-    if (userData) {
-        try {
-            return JSON.parse(userData);
-        } catch (e) {
-            return null;
-        }
-    }
-    return null;
+    if (!userData) return null;
+    try { return JSON.parse(userData); } catch (e) { return null; }
 }
 
-// Check if user is admin
 function isAdmin() {
     const user = getCurrentUser();
-    return user && user.role === 'ADMIN';
+    return !!user && user.role === 'ADMIN';
 }
 
-// Check if user is petugas
 function isPetugas() {
     const user = getCurrentUser();
-    return user && (user.role === 'PETUGAS' || user.role === 'ADMIN');
+    return !!user && (user.role === 'PETUGAS' || user.role === 'ADMIN');
 }
 
-// Update user info in sidebar
 function updateUserInfo() {
     const user = getCurrentUser();
-    if (user) {
-        document.getElementById('userName').textContent = user.nama || user.username;
-        document.getElementById('userRole').textContent = user.role || 'PETUGAS';
-        const avatar = document.getElementById('userAvatar');
-        avatar.textContent = (user.nama || user.username || 'U')[0].toUpperCase();
-    }
+    if (!user) return;
+
+    const name = user.nama || user.username || 'User';
+    const role = user.role || 'PETUGAS';
+    const nameEl = document.getElementById('userName');
+    const roleEl = document.getElementById('userRole');
+    const avatar = document.getElementById('userAvatar');
+    const headerUser = document.getElementById('headerUser');
+
+    if (nameEl) nameEl.textContent = name;
+    if (roleEl) roleEl.textContent = role;
+    if (headerUser) headerUser.textContent = name;
+    if (avatar) avatar.textContent = name.charAt(0).toUpperCase();
 }
 
-// Logout
 async function logout() {
-    try {
-        await apiRequest('logout', {});
-    } catch (e) {
-        // ignore
-    }
-    
+    try { await apiRequest('logout', {}); } catch (e) {}
     localStorage.removeItem(STORAGE_KEYS.TOKEN);
     localStorage.removeItem(STORAGE_KEYS.USER);
     clearIntervals();
@@ -53,53 +45,34 @@ async function logout() {
     showToast('Anda telah logout', 'info');
 }
 
-// Clear intervals
 let intervals = [];
-
 function clearIntervals() {
     intervals.forEach(id => clearInterval(id));
     intervals = [];
 }
+function addInterval(id) { intervals.push(id); }
 
-function addInterval(id) {
-    intervals.push(id);
-}
-
-// Start dashboard (called after login)
 function startDashboard() {
+    clearIntervals();
     updateUserInfo();
-    loadDashboard();
-    loadDataHP();
-    loadMonitorUsers();
-    loadActivityLog();
-    
-    // Show/hide admin menu
+
+    // Load only the dashboard first. Heavy pages are loaded when opened.
+    if (typeof loadDashboard === 'function') loadDashboard();
+
     const adminMenus = document.querySelectorAll('.menu-item[data-page="users"], .menu-item[data-page="activity"]');
-    if (isAdmin()) {
-        adminMenus.forEach(el => el.style.display = 'flex');
-    } else {
-        adminMenus.forEach(el => el.style.display = 'none');
-    }
-    
-    // Start polling
+    adminMenus.forEach(el => { el.style.display = isAdmin() ? '' : 'none'; });
+
     const pollInterval = setInterval(() => {
-        if (document.getElementById('page-dashboard').classList.contains('active')) {
-            loadDashboard();
-        }
-        if (document.getElementById('page-monitor').classList.contains('active')) {
-            loadMonitorUsers();
-        }
-        if (document.getElementById('page-datahp').classList.contains('active')) {
-            loadDataHP();
-        }
-        if (document.getElementById('page-activity').classList.contains('active')) {
-            loadActivityLog();
-        }
+        const active = document.querySelector('.page-content.active')?.id;
+        if (active === 'page-dashboard' && typeof loadDashboard === 'function') loadDashboard();
+        else if (active === 'page-monitor' && typeof loadMonitorUsers === 'function') loadMonitorUsers();
+        else if (active === 'page-datahp' && typeof loadDataHP === 'function') loadDataHP();
+        else if (active === 'page-activity' && typeof loadActivityLog === 'function') loadActivityLog();
     }, CONFIG.POLLING_INTERVAL);
     addInterval(pollInterval);
-    
-    // Start heartbeat
+
     const heartbeatInterval = setInterval(() => {
+        if (!localStorage.getItem(STORAGE_KEYS.TOKEN)) return;
         apiRequest('heartbeat', {
             status: document.querySelector('.page-content.active')?.id === 'page-datahp' ? 'CHECKING' : 'ONLINE'
         });
