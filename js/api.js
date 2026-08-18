@@ -1,38 +1,84 @@
 /**
  * API Client untuk Google Apps Script
+ * Versi lebih stabil untuk Web App cross-origin.
  */
+
+const API_TIMEOUT = 15000;
 
 async function apiRequest(action, data = {}) {
     const url = CONFIG.API_URL;
     const token = localStorage.getItem(STORAGE_KEYS.TOKEN);
-    
+
     const payload = {
-        action: action,
-        data: data,
-        token: token
+        action,
+        data,
+        token
     };
 
+    const controller = new AbortController();
+    const timeoutId = setTimeout(() => controller.abort(), API_TIMEOUT);
+
     try {
+        if (!url || !/^https:\/\//i.test(url)) {
+            throw new Error('API_URL tidak valid');
+        }
+
         const response = await fetch(url, {
             method: 'POST',
+            // text/plain adalah CORS-safelisted dan menghindari preflight OPTIONS.
+            // Apps Script tetap menerima JSON melalui e.postData.contents.
             headers: {
-                'Content-Type': 'application/json',
+                'Content-Type': 'text/plain;charset=UTF-8',
+                'Accept': 'application/json'
             },
-            body: JSON.stringify(payload)
+            body: JSON.stringify(payload),
+            cache: 'no-store',
+            redirect: 'follow',
+            signal: controller.signal
         });
 
         if (!response.ok) {
-            throw new Error(`HTTP error! status: ${response.status}`);
+            throw new Error(`HTTP ${response.status} ${response.statusText}`);
         }
 
-        const result = await response.json();
+        const raw = await response.text();
+
+        if (!raw) {
+            throw new Error('Server mengembalikan response kosong');
+        }
+
+        let result;
+        try {
+            result = JSON.parse(raw);
+        } catch (parseError) {
+            console.error('API mengembalikan response bukan JSON:', raw.slice(0, 500));
+            throw new Error('Response server bukan JSON yang valid');
+        }
+
+        if (!result || typeof result !== 'object') {
+            throw new Error('Format response server tidak valid');
+        }
+
         return result;
     } catch (error) {
-        console.error('API Error:', error);
+        const isTimeout = error?.name === 'AbortError';
+        const message = isTimeout
+            ? 'Server terlalu lama merespons'
+            : (error?.message || 'Gagal terhubung ke server');
+
+        console.error('API Error:', {
+            action,
+            url,
+            message,
+            error
+        });
+
         return {
             success: false,
-            message: 'Gagal terhubung ke server'
+            message
         };
+    } finally {
+        clearTimeout(timeoutId);
     }
 }
 
@@ -43,14 +89,22 @@ let lastRequestTime = {};
 function apiRequestWithCache(action, data = {}, cacheTime = 5000) {
     const key = action + JSON.stringify(data);
     const now = Date.now();
-    
-    if (requestCache[key] && (now - lastRequestTime[key] < cacheTime)) {
+
+    if (
+        Object.prototype.hasOwnProperty.call(requestCache, key) &&
+        (now - lastRequestTime[key] < cacheTime)
+    ) {
         return Promise.resolve(requestCache[key]);
     }
-    
+
     return apiRequest(action, data).then(result => {
         requestCache[key] = result;
-        lastRequestTime[key] = now;
+        lastRequestTime[key] = Date.now();
         return result;
     });
+}
+
+function clearApiCache() {
+    requestCache = {};
+    lastRequestTime = {};
 }
